@@ -3,6 +3,9 @@ const out3 = document.getElementsByClassName('output3')[0];
 const controlsElement3 = document.getElementsByClassName('control3')[0];
 const canvasCtx3 = out3.getContext('2d');
 const fpsControl = new FPS();
+const instructions = document.getElementById('instructions');
+
+
 
 const spinner = document.querySelector('.loading');
 spinner.ontransitionend = () => {
@@ -10,15 +13,23 @@ spinner.ontransitionend = () => {
 };
 
 function onResultsHands(results) {
+
+  // Cordinates which are required for the gesture recognition are sent to the server
   if(results.multiHandLandmarks && results.multiHandedness){
     const landmarks = results.multiHandLandmarks[0];
     const rightHand = results.multiHandedness[0].label === 'Right';
+    if(instructions.value === ""){
+      instructions.value = "Initialize";
+    }
     let data = {
-      "rightHand": rightHand,
+      "instructions": instructions.value,
       "landmarks": landmarks
     }
-    socket.send(JSON.stringify(landmarks));
+    socket.send(JSON.stringify(data));
   }
+
+
+
   document.body.classList.add('loaded');
   fpsControl.tick();
 
@@ -96,7 +107,6 @@ const socket = new WebSocket('ws://localhost:8000');
     });
 
     socket.addEventListener('message', function (event) {
-        console.log(event.data);
         var outputElement = document.getElementById('output');
         if (outputElement) {
           outputElement.textContent = event.data;
@@ -105,3 +115,4 @@ const socket = new WebSocket('ws://localhost:8000');
     const contactServer = () => {
         socket.send("Initialize");
     }
+
