@@ -16,19 +16,35 @@ function onResultsHands(results) {
 
   // Cordinates which are required for the gesture recognition are sent to the server
   if(results.multiHandLandmarks && results.multiHandedness){
-    const landmarks = results.multiHandLandmarks[0];
+    const rightlandmarks = results.multiHandLandmarks[0];
+    const leftlandmarks = results.multiHandLandmarks[1];
     const rightHand = results.multiHandedness[0].label === 'Right';
     if(instructions.value === ""){
       instructions.value = "Initialize";
     }
     let data = {
       "instructions": instructions.value,
-      "landmarks": landmarks
+      "rightlandmarks": rightlandmarks,
+      "leftlandmarks": leftlandmarks,
+      "height": out3.height,
+      "width": out3.width,
     }
-    socket.send(JSON.stringify(data));
+    if(instructions.value === 'A'){
+      if(typeof leftlandmarks === 'undefined'){
+        var outputElement = document.getElementById('output');
+        if (outputElement) {
+          outputElement.textContent = "Both hands are not visible";
+        }
+        
+      }else{
+          socket.send(JSON.stringify(data));
+      }
+    }
+    else{
+      socket.send(JSON.stringify(data));
+    }
+    
   }
-
-
 
   document.body.classList.add('loaded');
   fpsControl.tick();
@@ -101,6 +117,8 @@ new ControlPanel(controlsElement3, {
       hands.setOptions(options);
     });
 
+
+//Handle the prediction result came from server
 const socket = new WebSocket('ws://localhost:8000');
     socket.addEventListener('open', function (event) {
         socket.send('Connection Established');
@@ -109,7 +127,13 @@ const socket = new WebSocket('ws://localhost:8000');
     socket.addEventListener('message', function (event) {
         var outputElement = document.getElementById('output');
         if (outputElement) {
-          outputElement.textContent = event.data;
+          var data = JSON.parse(event.data);
+          var gesture = data.gesture;
+          var accuracy = data.accuracy;
+          outputElement.textContent = `Gesture: ${gesture}, Accuracy: ${accuracy}`;
+          //Todo
+          // Show the color according to the arrray data.correct
+          
         }
     });
     const contactServer = () => {

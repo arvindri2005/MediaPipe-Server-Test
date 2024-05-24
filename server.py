@@ -2,30 +2,51 @@ import asyncio
 import websockets
 import math
 import json
-from Symbols.U import detectU
+from Symbols.U import classify_u_gesture
+from Symbols.A import classifyAgesture
 
 async def echo(websocket):
     async for data in websocket:
         if data:  # check if data is not empty
             try:
-                original_data = json.loads(data)
-                instruction = original_data.get('instructions', None)
-                landmarks = original_data.get('landmarks', None)
-                print(instruction)
-                print(landmarks)
+
+                #Geeting data send from socket
+                originalData = json.loads(data)
+                
+                instruction = originalData.get('instructions', None)
+                rightLandmarks = originalData.get('rightlandmarks', None)
+                leftLandmarks = originalData.get('leftlandmarks', None)
+                height = originalData.get('height', None)
+                width = originalData.get('width', None)
+
                 # Define a dictionary to act as a switch-case
                 switch = {
-                    'U': detectU,
+                    'A': classifyAgesture,
+                    'U': classify_u_gesture,
                     # Add more instructions as needed
                 }
 
                 # Get the function from switch dictionary with the instruction as key
-                func = switch.get(instruction, None)
-                if func:
+                CheckAccuracy = switch.get(instruction, None)
+
+                if CheckAccuracy:
+
                     # Call the function
-                     await websocket.send(func(landmarks))
+                    gesture, accuracy, correct = CheckAccuracy(rightLandmarks,leftLandmarks, height, width)
+
+                    # Send the response back to the client
+                    response = {
+                        'gesture': gesture,
+                        'accuracy': accuracy,
+                        'correct': correct
+                    }
+                    await websocket.send(json.dumps(response))
+
                 else:
+                    #Sign yet to implement
                     print(f"Unknown instruction: {instruction}")
+
+            #Recived Data is invalid       
             except json.JSONDecodeError:
                 print("Received data is not a valid JSON string")
             
